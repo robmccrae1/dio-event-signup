@@ -1,0 +1,42 @@
+name: Keep Supabase Warm
+
+# Free Supabase projects pause after 7 days of inactivity. This workflow
+# pings the database once a day so it stays awake.
+
+on:
+  schedule:
+    - cron: '0 14 * * *'   # 14:00 UTC = 02:00 NZST
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase Auth health
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "::error::SUPABASE_URL or SUPABASE_ANON_KEY secret is not set."
+            exit 1
+          fi
+          health=$(curl -sS -o /dev/null -w "%{http_code}" \
+            "$SUPABASE_URL/auth/v1/health" \
+            -H "apikey: $SUPABASE_ANON_KEY")
+          echo "Auth health: $health"
+          if [ "$health" -ge 400 ]; then
+            echo "::error::Supabase auth health returned HTTP $health"
+            exit 1
+          fi
+          rpc=$(curl -sS -o /dev/null -w "%{http_code}" \
+            "$SUPABASE_URL/rest/v1/rpc/get_session_seats" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{}')
+          echo "RPC ping: $rpc"
+          if [ "$rpc" -ge 500 ] || [ "$rpc" -eq 0 ]; then
+            echo "::error::Supabase RPC ping returned HTTP $rpc"
+            exit 1
+          fi
