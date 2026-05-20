@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en-NZ">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin · Event settings</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%231a3a6e'/%3E%3Ctext x='50' y='68' text-anchor='middle' font-family='-apple-system,sans-serif' font-size='62' font-weight='700' fill='white'%3ED%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    --navy: #1a3a6e; --bg: #f6f7f9; --card: #fff; --border: #d8dde6;
+    --text: #1a1f2b; --muted: #6b7585; --green: #197d4a; --red: #b3261e;
+    --blue-bg: #e7eef9;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.5;
+  }
+  header {
+    background: var(--navy); color: white; padding: 14px 24px;
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 12px;
+  }
+  header h1 { margin: 0; font-size: 18px; font-weight: 600; }
+  header .links { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  header a, header button {
+    background: rgba(255,255,255,0.15); color: white;
+    border: 1px solid rgba(255,255,255,0.3);
+    padding: 6px 12px; border-radius: 4px; text-decoration: none;
+    font-size: 13px; cursor: pointer;
+  }
+  header a:hover, header button:hover { background: rgba(255,255,255,0.25); }
+  main { max-width: 720px; margin: 0 auto; padding: 24px 16px 60px; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 24px; margin-bottom: 20px;
+  }
+  .card h2 { margin: 0 0 4px; font-size: 18px; color: var(--navy); }
+  .card .desc { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+
+  .field { margin-bottom: 18px; }
+  .field label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+  .field .hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .field input[type=text], .field input[type=number], .field input[type=datetime-local], .field textarea {
+    width: 100%; padding: 8px 12px; border: 1px solid var(--border);
+    border-radius: 6px; font-size: 14px; font-family: inherit;
+  }
+  .field input:focus, .field textarea:focus { outline: 2px solid var(--navy); outline-offset: -1px; }
+  .field .toggle { display: flex; align-items: center; gap: 10px; }
+  .field .toggle input[type=checkbox] { width: 20px; height: 20px; cursor: pointer; }
+  .field .toggle label { margin: 0; cursor: pointer; font-weight: 400; font-size: 14px; }
+
+  .save-row {
+    display: flex; gap: 12px; align-items: center; margin-top: 12px;
+    padding-top: 20px; border-top: 1px solid var(--border);
+  }
+  .save-row button.primary {
+    background: var(--navy); color: white; border: none;
+    padding: 10px 20px; border-radius: 6px; font-size: 14px;
+    cursor: pointer; font-weight: 500;
+  }
+  .save-row button.primary:hover { background: #122a52; }
+  .save-row button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .save-status { font-size: 13px; color: var(--green); }
+  .save-status.error { color: var(--red); }
+
+  #loading, #not-admin { text-align: center; padding: 80px; color: var(--muted); }
+  #not-admin { color: var(--red); }
+
+  #toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    padding: 10px 20px; background: var(--text); color: white;
+    border-radius: 6px; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 100;
+  }
+  #toast.show { opacity: 1; }
+  #toast.error { background: var(--red); }
+  #toast.success { background: var(--green); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Event settings</h1>
+  <div class="links">
+    <a href="/">← Signup</a>
+    <a href="/admin">Registrations</a>
+    <a href="/admin-sessions">Sessions</a>
+    <a href="/print">Attendance sheets</a>
+    <span id="admin-email" style="font-size:13px;opacity:0.85"></span>
+    <button id="signout-btn">Sign out</button>
+  </div>
+</header>
+
+<main>
+  <div id="loading">Loading…</div>
+  <div id="not-admin" hidden>
+    <h2>Not authorised</h2>
+    <p>Your account isn't in the admin list.</p>
+  </div>
+
+  <div id="content" hidden>
+
+    <div class="card">
+      <h2>Event identity</h2>
+      <div class="desc">Shown on the public signup page and in confirmation emails / .ics files.</div>
+
+      <div class="field">
+        <label for="event_name">Event name</label>
+        <input id="event_name" type="text" placeholder="e.g. Teacher Only Day 2027">
+      </div>
+
+      <div class="field">
+        <label for="event_subtitle">Subtitle <span class="hint">(optional)</span></label>
+        <input id="event_subtitle" type="text" placeholder="e.g. Friday 15 May 2027">
+      </div>
+
+      <div class="field">
+        <label for="event_intro">Intro paragraph <span class="hint">(shown on sign-in screen)</span></label>
+        <textarea id="event_intro" rows="3" placeholder="e.g. Sign in with your Dio Google account to register for sessions."></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Pick rules</h2>
+      <div class="desc">Control how many sessions each person can pick and what conflicts to enforce.</div>
+
+      <div class="field">
+        <label for="max_picks">Maximum picks per person</label>
+        <input id="max_picks" type="number" min="0" step="1" placeholder="e.g. 4">
+        <div class="hint">Use <code>0</code> for unlimited (no cap on how many sessions one person can book).</div>
+      </div>
+
+      <div class="field">
+        <div class="toggle">
+          <input id="enforce_no_duplicate_titles" type="checkbox">
+          <label for="enforce_no_duplicate_titles">Don't allow the same session title to be picked twice</label>
+        </div>
+        <div class="hint">Useful when a session runs multiple times — staff can only attend it once.</div>
+      </div>
+
+      <div class="field">
+        <div class="toggle">
+          <input id="enforce_no_time_conflicts" type="checkbox">
+          <label for="enforce_no_time_conflicts">Don't allow sessions that overlap in time</label>
+        </div>
+        <div class="hint">Compares dates and start/end times. Disable if you want to allow conflicting bookings.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Cutoff and access</h2>
+
+      <div class="field">
+        <label for="edit_cutoff_iso">Editing closes at</label>
+        <input id="edit_cutoff_iso" type="datetime-local">
+        <div class="hint">After this, the signup page becomes read-only. NZ time.</div>
+      </div>
+
+      <div class="field">
+        <label for="email_domain">Allowed email domain</label>
+        <input id="email_domain" type="text" placeholder="diocesan.school.nz">
+        <div class="hint">Only emails ending with <code>@&lt;this&gt;</code> can sign in. Use <code>*</code> to allow any domain.</div>
+      </div>
+
+      <div class="field">
+        <div class="toggle">
+          <input id="event_open" type="checkbox">
+          <label for="event_open">Event is open for registration</label>
+        </div>
+        <div class="hint">Untick to immediately close the event regardless of the cutoff date (kill switch).</div>
+      </div>
+    </div>
+
+    <div class="save-row">
+      <button id="save-btn" class="primary">Save changes</button>
+      <span id="save-status" class="save-status"></span>
+    </div>
+
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script src="config.js"></script>
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
+
+  const SB = createClient(window.SUPABASE_CONFIG.url, window.SUPABASE_CONFIG.publishableKey,
+    { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+
+  const $ = (s) => document.querySelector(s);
+  const toastEl = $('#toast');
+  function toast(msg, kind='info') {
+    toastEl.textContent = msg;
+    toastEl.className = 'show ' + kind;
+    setTimeout(() => toastEl.className = '', 3000);
+  }
+
+  // ISO-8601 with offset → datetime-local string (YYYY-MM-DDTHH:mm, NZ-local)
+  function isoToLocalInput(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    // Show in NZ time
+    const fmt = new Intl.DateTimeFormat('en-NZ', {
+      timeZone: 'Pacific/Auckland',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    }).formatToParts(d).reduce((acc, p) => { acc[p.type] = p.value; return acc; }, {});
+    return `${fmt.year}-${fmt.month}-${fmt.day}T${fmt.hour === '24' ? '00' : fmt.hour}:${fmt.minute}`;
+  }
+
+  // datetime-local string → ISO-8601 (assume NZ time, calculate offset)
+  function localInputToIso(s) {
+    if (!s) return '';
+    // NZ is +12 (NZST) or +13 (NZDT). We'll determine which is active for the given date.
+    const probe = new Date(s + ':00');
+    const isoNoTz = s + ':00';
+    // Round-trip via Intl to find current NZ offset
+    const offsetMin = (() => {
+      const parts = new Intl.DateTimeFormat('en-NZ', {
+        timeZone: 'Pacific/Auckland', timeZoneName: 'short'
+      }).formatToParts(probe);
+      const tz = parts.find(p => p.type === 'timeZoneName')?.value || 'NZST';
+      return tz === 'NZDT' ? 13 * 60 : 12 * 60;
+    })();
+    const hh = String(Math.floor(offsetMin / 60)).padStart(2, '0');
+    const mm = String(offsetMin % 60).padStart(2, '0');
+    return `${isoNoTz}+${hh}:${mm}`;
+  }
+
+  async function load() {
+    const { data: { session } } = await SB.auth.getSession();
+    if (!session) { location.href = '/'; return; }
+    $('#admin-email').textContent = session.user.email;
+
+    const { data: isAdminData, error: adminError } = await SB.rpc('is_admin');
+    if (adminError || !isAdminData) {
+      $('#loading').hidden = true;
+      $('#not-admin').hidden = false;
+      return;
+    }
+
+    const { data, error } = await SB.from('settings').select('*');
+    if (error) {
+      $('#loading').textContent = 'Error: ' + error.message;
+      return;
+    }
+
+    const map = {};
+    for (const r of (data || [])) map[r.key] = r.value;
+
+    $('#event_name').value      = map.event_name || '';
+    $('#event_subtitle').value  = map.event_subtitle || '';
+    $('#event_intro').value     = map.event_intro || '';
+    $('#max_picks').value       = map.max_picks || '0';
+    $('#enforce_no_duplicate_titles').checked = (map.enforce_no_duplicate_titles === 'true');
+    $('#enforce_no_time_conflicts').checked   = (map.enforce_no_time_conflicts === 'true');
+    $('#edit_cutoff_iso').value = isoToLocalInput(map.edit_cutoff_iso);
+    $('#email_domain').value    = map.email_domain || '';
+    $('#event_open').checked    = (map.event_open !== 'false');
+
+    $('#loading').hidden = true;
+    $('#content').hidden = false;
+  }
+
+  async function save() {
+    const btn = $('#save-btn');
+    const status = $('#save-status');
+    btn.disabled = true;
+    status.textContent = 'Saving…';
+    status.classList.remove('error');
+
+    const updates = [
+      ['event_name',                  $('#event_name').value.trim()],
+      ['event_subtitle',              $('#event_subtitle').value.trim()],
+      ['event_intro',                 $('#event_intro').value.trim()],
+      ['max_picks',                   String(parseInt($('#max_picks').value || '0', 10) || 0)],
+      ['enforce_no_duplicate_titles', $('#enforce_no_duplicate_titles').checked ? 'true' : 'false'],
+      ['enforce_no_time_conflicts',   $('#enforce_no_time_conflicts').checked ? 'true' : 'false'],
+      ['edit_cutoff_iso',             localInputToIso($('#edit_cutoff_iso').value)],
+      ['email_domain',                $('#email_domain').value.trim()],
+      ['event_open',                  $('#event_open').checked ? 'true' : 'false'],
+    ];
+
+    try {
+      for (const [k, v] of updates) {
+        const { data, error } = await SB.rpc('admin_set_setting', { p_key: k, p_value: v });
+        if (error) throw error;
+        if (data && data.ok === false) throw new Error(data.error || 'save_failed');
+      }
+      status.textContent = '✓ Saved at ' + new Date().toLocaleTimeString('en-NZ');
+      toast('Settings saved.', 'success');
+    } catch (e) {
+      console.error(e);
+      status.textContent = '✗ ' + (e.message || 'Failed to save');
+      status.classList.add('error');
+      toast('Save failed.', 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  $('#save-btn').addEventListener('click', save);
+  $('#signout-btn').addEventListener('click', async () => {
+    await SB.auth.signOut();
+    location.href = '/';
+  });
+
+  load();
+</script>
+
+</body>
+</html>

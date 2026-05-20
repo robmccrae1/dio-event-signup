@@ -1,23 +1,795 @@
 <!DOCTYPE html>
 <html lang="en-NZ">
 <head>
-  <meta charset="UTF-8">
-  <title>Dio Event Signup — coming soon</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      max-width: 600px;
-      margin: 80px auto;
-      padding: 20px;
-      color: #222;
-      line-height: 1.6;
-    }
-    h1 { color: #1a3a6e; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dio Event Signup</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%231a3a6e'/%3E%3Ctext x='50' y='68' text-anchor='middle' font-family='-apple-system,sans-serif' font-size='62' font-weight='700' fill='white'%3ED%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    --navy: #1a3a6e;
+    --navy-dark: #122a52;
+    --bg: #f6f7f9;
+    --card: #ffffff;
+    --border: #d8dde6;
+    --text: #1a1f2b;
+    --muted: #6b7585;
+    --green: #197d4a;
+    --green-bg: #e6f4ec;
+    --amber: #b8721a;
+    --amber-bg: #fdf2e0;
+    --red: #b3261e;
+    --red-bg: #fdecea;
+    --blue-bg: #e7eef9;
+    --pick-border: #1a3a6e;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+  }
+  header {
+    background: var(--navy);
+    color: white;
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  header h1 { margin: 0; font-size: 20px; font-weight: 600; }
+  header h1 .subtitle { font-weight: 400; opacity: 0.85; margin-left: 8px; }
+  header .user-bar { font-size: 14px; display: flex; align-items: center; gap: 12px; }
+  header .user-bar button {
+    background: rgba(255,255,255,0.15);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.3);
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  header .user-bar button:hover { background: rgba(255,255,255,0.25); }
+  main { max-width: 1200px; margin: 0 auto; padding: 20px 16px 60px; }
+
+  #signin-view { text-align: center; padding: 60px 20px 80px; }
+  #signin-view h2 { margin: 0 0 12px; color: var(--navy); }
+  #signin-view p { color: var(--muted); max-width: 480px; margin: 0 auto 24px; }
+  #google-signin {
+    background: white;
+    border: 1px solid var(--border);
+    padding: 12px 24px;
+    font-size: 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+  }
+  #google-signin:hover { background: #fafafa; }
+  #google-signin svg { width: 20px; height: 20px; }
+
+  #my-picks {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    position: sticky;
+    top: 12px;
+    z-index: 10;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  }
+  #my-picks .picks-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  #my-picks h2 { margin: 0; font-size: 16px; font-weight: 600; }
+  #my-picks .count-badge {
+    background: var(--blue-bg);
+    color: var(--navy);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  #my-picks .nudge { color: var(--amber); font-size: 13px; margin-top: 4px; }
+  #my-picks .complete { color: var(--green); font-size: 13px; margin-top: 4px; font-weight: 500; }
+  #my-picks ul { list-style: none; padding: 0; margin: 12px 0 0; }
+  #my-picks li {
+    padding: 8px 0;
+    border-top: 1px solid var(--border);
+    font-size: 14px;
+  }
+  #my-picks li:first-child { border-top: none; }
+  #my-picks li .pick-info { display: flex; flex-direction: column; }
+  #my-picks li .pick-info strong { font-weight: 600; }
+  #my-picks li .pick-info span { color: var(--muted); font-size: 12px; }
+  #my-picks .empty { color: var(--muted); font-style: italic; padding: 8px 0; font-size: 13px; }
+  #picks-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  #picks-actions button {
+    background: var(--card);
+    color: var(--navy);
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  #picks-actions button:hover { background: var(--blue-bg); border-color: var(--navy); }
+
+  .day-group {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+  .day-header {
+    background: var(--navy);
+    color: white;
+    padding: 10px 16px;
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .session-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1px;
+    background: var(--border);
+  }
+  .session-list > * { background: var(--card); }
+
+  .session {
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: background 0.1s;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-height: 130px;
+    position: relative;
+  }
+  .session:hover { background: #f4f6fa; }
+  .session-time { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .session-title { font-weight: 600; font-size: 14px; line-height: 1.3; }
+  .session-meta { font-size: 12px; color: var(--muted); }
+  .session-room { font-size: 11px; color: var(--muted); font-weight: 500; }
+  .session-seats {
+    margin-top: auto;
+    font-size: 12px;
+    font-weight: 600;
+    align-self: flex-start;
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+  .session[data-state="available"] .session-seats { background: var(--green-bg); color: var(--green); }
+  .session[data-state="filling"]   .session-seats { background: var(--amber-bg); color: var(--amber); }
+  .session[data-state="full"]      .session-seats { background: var(--red-bg); color: var(--red); }
+  .session[data-state="picked"] {
+    background: var(--blue-bg);
+    border-left: 4px solid var(--pick-border);
+    padding-left: 10px;
+  }
+  .session[data-state="picked"] .session-seats { background: var(--pick-border); color: white; }
+  .session[data-state="picked"] .session-seats::before { content: "✓ "; }
+  .cancel-hint {
+    font-size: 11px;
+    color: var(--navy);
+    font-weight: 500;
+    font-style: italic;
+    margin-top: 2px;
+  }
+  .session[data-disabled="true"] {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  .session[data-disabled="true"]:hover { background: var(--card); }
+  .session-disabled-reason {
+    font-size: 11px;
+    color: var(--muted);
+    font-style: italic;
+    margin-top: 2px;
+  }
+  .session:focus-visible {
+    outline: 3px solid var(--navy);
+    outline-offset: -3px;
+  }
+
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px 20px;
+    background: var(--text);
+    color: white;
+    border-radius: 6px;
+    font-size: 14px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    z-index: 100;
+    max-width: 90vw;
+  }
+  #toast.show { opacity: 1; }
+  #toast.error { background: var(--red); }
+  #toast.success { background: var(--green); }
+
+  #loading { text-align: center; padding: 80px; color: var(--muted); }
+  #closed-view, #no-sessions {
+    background: var(--amber-bg);
+    border: 1px solid var(--amber);
+    padding: 16px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    color: var(--amber);
+  }
+
+  @media (max-width: 600px) {
+    header h1 { font-size: 16px; }
+    .session-list { grid-template-columns: 1fr; }
+    main { padding: 12px 8px 40px; }
+    #my-picks { position: static; }
+  }
+</style>
 </head>
 <body>
-  <h1>Dio Event Signup</h1>
-  <p>Frontend coming online shortly. If you're seeing this, the deploy is working.</p>
+
+<header>
+  <h1><span id="event-name-header">Event Signup</span><span class="subtitle" id="event-subtitle-header"></span></h1>
+  <div class="user-bar" id="user-bar"></div>
+</header>
+
+<main id="app">
+  <div id="loading">Loading…</div>
+
+  <div id="signin-view" hidden>
+    <h2 id="event-name-welcome">Welcome</h2>
+    <p id="event-intro">Sign in with your Dio Google account to register for sessions.</p>
+    <button id="google-signin">
+      <svg viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.706A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.038l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.962L3.964 7.294C4.672 5.167 6.656 3.58 9 3.58z"/></svg>
+      Sign in with Google
+    </button>
+    <p style="margin-top:32px;font-size:13px" id="domain-hint"></p>
+  </div>
+
+  <div id="signup-view" hidden>
+    <div id="closed-view" hidden></div>
+    <div id="no-sessions" hidden>
+      No sessions have been set up yet. Check back soon.
+    </div>
+    <div id="my-picks" hidden>
+      <div class="picks-header">
+        <h2>Your picks</h2>
+        <span class="count-badge" id="picks-count">0</span>
+      </div>
+      <div id="picks-status"></div>
+      <ul id="picks-list"></ul>
+      <div id="picks-actions" hidden>
+        <button id="print-picks" type="button">🖨 Print my picks</button>
+        <button id="save-calendar" type="button">📅 Add to calendar</button>
+      </div>
+    </div>
+    <div id="grid"></div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script src="config.js"></script>
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
+
+  const SB = createClient(
+    window.SUPABASE_CONFIG.url,
+    window.SUPABASE_CONFIG.publishableKey,
+    { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } }
+  );
+
+  const $ = (s) => document.querySelector(s);
+  const toastEl = $('#toast');
+
+  // state
+  let session = null;
+  let sessionsList = [];          // [{id, title, presenter, session_date, start_time, end_time, room, capacity, taken, available, ...}]
+  let myPicks = [];               // [{session_id, title, session_date, start_time, end_time, ...}]
+  let settings = {};              // map of key -> value
+  let pollHandle = null;
+  let pendingClicks = new Set();
+
+  function toast(msg, kind = 'info') {
+    toastEl.textContent = msg;
+    toastEl.className = 'show ' + kind;
+    setTimeout(() => { toastEl.className = ''; }, 3500);
+  }
+
+  const ERR_MSG = {
+    not_authenticated:       'Please sign in again.',
+    wrong_domain:            'Your account domain is not allowed to register.',
+    email_not_verified:      'Your email address needs to be verified.',
+    event_closed:            'Registration is currently closed.',
+    editing_closed:          'Registration is closed.',
+    session_not_found:       'That session no longer exists.',
+    session_full:            'Sorry — that session just filled up.',
+    max_picks_reached:       'You have reached the maximum number of picks.',
+    duplicate_title:         'You have already picked a session with that title.',
+    time_conflict:           'That overlaps with another session you have already picked.',
+    not_registered:          'You are not registered for that session.',
+  };
+  function explainError(code) { return ERR_MSG[code] || ('Error: ' + code); }
+
+  function escapeHtml(s) {
+    if (s == null) return '';
+    return String(s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  }
+
+  function formatDate(iso) {
+    return new Date(iso + 'T00:00:00').toLocaleDateString('en-NZ', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+    });
+  }
+  function formatTimeRange(start, end) {
+    return `${start.slice(0,5)} – ${end.slice(0,5)}`;
+  }
+
+  async function getSession() {
+    const { data: { session: s } } = await SB.auth.getSession();
+    return s;
+  }
+  async function signIn() {
+    const domain = settings.email_domain;
+    const opts = { redirectTo: window.location.origin };
+    if (domain && domain !== '*' && domain !== '') {
+      opts.queryParams = { hd: domain };
+    }
+    const { error } = await SB.auth.signInWithOAuth({ provider: 'google', options: opts });
+    if (error) toast(error.message, 'error');
+  }
+  async function signOut() {
+    await SB.auth.signOut();
+    location.reload();
+  }
+  $('#google-signin').addEventListener('click', signIn);
+
+  // ---- data loading ----
+  async function loadSettings() {
+    const { data, error } = await SB.from('settings').select('*');
+    if (error) return;
+    settings = {};
+    for (const row of (data || [])) settings[row.key] = row.value;
+    applySettingsToUI();
+  }
+
+  function applySettingsToUI() {
+    const eventName = settings.event_name || 'Event Signup';
+    const subtitle = settings.event_subtitle || '';
+    $('#event-name-header').textContent = eventName;
+    $('#event-subtitle-header').textContent = subtitle ? ' · ' + subtitle : '';
+    $('#event-name-welcome').textContent = eventName;
+    $('#event-intro').textContent = settings.event_intro
+      || `Sign in with your Google account to register for sessions.`;
+    const domain = settings.email_domain;
+    $('#domain-hint').innerHTML = (domain && domain !== '*' && domain !== '')
+      ? `Only <code>@${escapeHtml(domain)}</code> accounts can sign in.`
+      : '';
+  }
+
+  async function loadSessionsAndSeats() {
+    const [{ data: ss, error: se }, { data: seats, error: ke }] = await Promise.all([
+      SB.from('sessions').select('*').order('session_date').order('start_time').order('display_order'),
+      SB.rpc('get_session_seats'),
+    ]);
+    if (se || ke) { console.error(se, ke); throw new Error('Could not load sessions.'); }
+    const seatBy = {};
+    for (const r of (seats || [])) seatBy[r.session_id] = r;
+    sessionsList = (ss || []).map(s => ({
+      ...s,
+      taken:     seatBy[s.id]?.taken ?? 0,
+      available: seatBy[s.id]?.available ?? s.capacity,
+    }));
+  }
+
+  async function loadMyPicks() {
+    const { data, error } = await SB.from('registrations')
+      .select('session_id, sessions(id, title, presenter, session_date, start_time, end_time, room)')
+      .order('created_at');
+    if (error) { console.error(error); throw error; }
+    myPicks = (data || []).map(r => ({
+      session_id: r.session_id,
+      ...r.sessions
+    }));
+  }
+
+  // ---- helpers ----
+  function isPickedSession(id) { return myPicks.some(p => p.session_id === id); }
+  function maxPicks() {
+    const n = parseInt(settings.max_picks || '0', 10);
+    return isNaN(n) ? 0 : n;
+  }
+  function checkNoDuplicateTitles() { return settings.enforce_no_duplicate_titles === 'true'; }
+  function checkNoTimeConflicts()   { return settings.enforce_no_time_conflicts   === 'true'; }
+  function eventOpen()              { return settings.event_open !== 'false'; }
+  function editCutoff() {
+    return settings.edit_cutoff_iso ? new Date(settings.edit_cutoff_iso) : null;
+  }
+  function isClosed() {
+    const c = editCutoff();
+    return !eventOpen() || (c && new Date() >= c);
+  }
+
+  function isTimeConflict(a, b) {
+    return a.session_date === b.session_date
+        && a.start_time < b.end_time
+        && a.end_time   > b.start_time;
+  }
+
+  function pickedTitleClash(s) {
+    return myPicks.some(p => p.session_id !== s.id && p.title?.toLowerCase() === s.title?.toLowerCase());
+  }
+  function pickedTimeClash(s) {
+    return myPicks.some(p => p.session_id !== s.id && isTimeConflict(p, s));
+  }
+
+  // ---- rendering ----
+  function render() {
+    const closed = isClosed();
+    const closedEl = $('#closed-view');
+    if (closed) {
+      closedEl.hidden = false;
+      closedEl.innerHTML = '<strong>Registration is closed.</strong> Your picks are below.';
+    } else {
+      closedEl.hidden = true;
+    }
+
+    if (sessionsList.length === 0) {
+      $('#no-sessions').hidden = false;
+      $('#my-picks').hidden = true;
+      $('#grid').innerHTML = '';
+      return;
+    } else {
+      $('#no-sessions').hidden = true;
+      $('#my-picks').hidden = false;
+    }
+
+    // group sessions by date
+    const groups = {};
+    for (const s of sessionsList) (groups[s.session_date] ||= []).push(s);
+    const dates = Object.keys(groups).sort();
+
+    const max = maxPicks();
+    const atMax = max > 0 && myPicks.length >= max;
+
+    const gridHtml = dates.map(date => {
+      const items = groups[date];
+      const cards = items.map(s => {
+        const isMine = isPickedSession(s.id);
+        const full = s.available <= 0 && !isMine;
+        const titleClash = !isMine && checkNoDuplicateTitles() && pickedTitleClash(s);
+        const timeClash  = !isMine && checkNoTimeConflicts()   && pickedTimeClash(s);
+        const disabled = !isMine && (full || (atMax && !isMine) || titleClash || timeClash || closed);
+
+        let state = 'available';
+        if (isMine) state = 'picked';
+        else if (full) state = 'full';
+        else if (s.available <= 5) state = 'filling';
+
+        let reason = '';
+        if (!isMine && timeClash)       reason = 'Overlaps with another pick';
+        else if (!isMine && titleClash) reason = 'You have already picked this title';
+        else if (!isMine && atMax)      reason = `You have reached the max of ${max} picks`;
+        else if (!isMine && full)       reason = 'Full';
+
+        const seatLabel = isMine
+          ? 'Booked'
+          : (s.available <= 0 ? 'Full' : `${s.available} seat${s.available === 1 ? '' : 's'} left`);
+
+        const ariaLabel = `${s.title}${s.presenter ? ', by ' + s.presenter : ''}${s.room ? ', room ' + s.room : ''}, ${formatTimeRange(s.start_time, s.end_time)}, ${seatLabel}${isMine ? ' — you are registered' : (disabled && reason ? ' — ' + reason : '')}`;
+
+        return `
+          <div class="session"
+               role="button"
+               tabindex="${disabled ? -1 : 0}"
+               aria-pressed="${isMine}"
+               aria-disabled="${disabled}"
+               aria-label="${escapeHtml(ariaLabel)}"
+               data-state="${state}"
+               data-disabled="${disabled}"
+               data-session-id="${s.id}">
+            <div class="session-time">${escapeHtml(formatTimeRange(s.start_time, s.end_time))}</div>
+            <div class="session-title">${escapeHtml(s.title)}</div>
+            ${s.presenter ? `<div class="session-meta">${escapeHtml(s.presenter)}</div>` : ''}
+            ${s.room ? `<div class="session-room">Room ${escapeHtml(s.room)}</div>` : ''}
+            ${isMine ? '<div class="cancel-hint">Click to cancel</div>' : ''}
+            ${reason ? `<div class="session-disabled-reason">${escapeHtml(reason)}</div>` : ''}
+            <div class="session-seats">${seatLabel}</div>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <section class="day-group">
+          <div class="day-header">${escapeHtml(formatDate(date))}</div>
+          <div class="session-list">${cards}</div>
+        </section>
+      `;
+    }).join('');
+
+    $('#grid').innerHTML = gridHtml;
+
+    // my-picks panel
+    const orderedPicks = [...myPicks].sort((a, b) =>
+      (a.session_date || '').localeCompare(b.session_date || '')
+      || (a.start_time || '').localeCompare(b.start_time || '')
+    );
+
+    if (max > 0) {
+      $('#picks-count').textContent = `${myPicks.length} of ${max}`;
+    } else {
+      $('#picks-count').textContent = `${myPicks.length}`;
+    }
+
+    const picksList = $('#picks-list');
+    if (orderedPicks.length === 0) {
+      picksList.innerHTML = '<li class="empty">No picks yet — click a session below to register.</li>';
+    } else {
+      picksList.innerHTML = orderedPicks.map(p => `
+        <li>
+          <div class="pick-info">
+            <strong>${escapeHtml(p.title)}</strong>
+            <span>${escapeHtml(formatDate(p.session_date))} · ${escapeHtml(formatTimeRange(p.start_time, p.end_time))}${p.presenter ? ' · ' + escapeHtml(p.presenter) : ''}${p.room ? ' · Room ' + escapeHtml(p.room) : ''}</span>
+          </div>
+        </li>
+      `).join('');
+    }
+
+    const picksStatus = $('#picks-status');
+    if (closed) {
+      picksStatus.innerHTML = '';
+    } else if (max > 0 && myPicks.length < max) {
+      const left = max - myPicks.length;
+      picksStatus.innerHTML = `<div class="nudge">You can still pick ${left} more.</div>`;
+    } else if (max > 0 && myPicks.length === max) {
+      picksStatus.innerHTML = `<div class="complete">All ${max} picks locked in. You can still swap any until ${formatCutoff()}.</div>`;
+    } else {
+      picksStatus.innerHTML = '';
+    }
+
+    $('#picks-actions').hidden = (myPicks.length === 0);
+  }
+
+  function formatCutoff() {
+    const c = editCutoff();
+    if (!c) return 'the cutoff';
+    return c.toLocaleString('en-NZ', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+  }
+
+  // ---- click + keyboard ----
+  $('#grid').addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const card = e.target.closest('.session');
+    if (!card) return;
+    e.preventDefault();
+    card.click();
+  });
+
+  $('#grid').addEventListener('click', async (e) => {
+    const card = e.target.closest('.session');
+    if (!card) return;
+    if (card.dataset.disabled === 'true') return;
+    if (isClosed()) return;
+
+    const sessionId = card.dataset.sessionId;
+    if (pendingClicks.has(sessionId)) return;
+    pendingClicks.add(sessionId);
+    card.style.opacity = '0.6';
+
+    const isMine = isPickedSession(sessionId);
+    try {
+      const rpc = isMine ? 'unregister_from_session' : 'register_for_session';
+      const { data, error } = await SB.rpc(rpc, { p_session_id: sessionId });
+      if (error) throw error;
+      if (!data.ok) toast(explainError(data.error), 'error');
+      else toast(isMine ? 'Cancelled.' : 'Registered ✓', 'success');
+      await Promise.all([loadSessionsAndSeats(), loadMyPicks()]);
+      render();
+    } catch (err) {
+      console.error(err);
+      toast('Something went wrong. Try again.', 'error');
+    } finally {
+      pendingClicks.delete(sessionId);
+      card.style.opacity = '';
+    }
+  });
+
+  // ---- print + calendar ----
+  function printMyPicks() {
+    const items = [...myPicks].sort((a, b) =>
+      (a.session_date || '').localeCompare(b.session_date || '')
+      || (a.start_time || '').localeCompare(b.start_time || '')
+    );
+    if (items.length === 0) return;
+    const name = session?.user?.user_metadata?.full_name
+              || session?.user?.user_metadata?.name
+              || session?.user?.email || '';
+    const eventName = settings.event_name || 'Event';
+
+    const rows = items.map(p => `
+      <tr>
+        <td>${escapeHtml(formatDate(p.session_date))}</td>
+        <td>${escapeHtml(formatTimeRange(p.start_time, p.end_time))}</td>
+        <td><strong>${escapeHtml(p.title)}</strong></td>
+        <td>${escapeHtml(p.presenter || '')}</td>
+        <td>${escapeHtml(p.room || '')}</td>
+      </tr>
+    `).join('');
+
+    const html = `<!DOCTYPE html><html lang="en-NZ"><head><meta charset="UTF-8">
+      <title>My picks · ${escapeHtml(eventName)}</title>
+      <style>
+        @page { size: A4 portrait; margin: 1.8cm; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #1a1f2b; }
+        h1 { color: #1a3a6e; margin: 0 0 4px; font-size: 24px; }
+        .sub { color: #6b7585; margin: 0 0 28px; font-size: 14px; }
+        .name { font-size: 16px; margin: 0 0 24px; font-weight: 600; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #d8dde6; font-size: 14px; vertical-align: top; }
+        th { background: #1a3a6e; color: white; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+        td:first-child, td:nth-child(2) { white-space: nowrap; color: #6b7585; }
+        .footer { margin-top: 32px; font-size: 12px; color: #6b7585; }
+      </style></head><body>
+      <h1>Your picks — ${escapeHtml(eventName)}</h1>
+      <p class="sub">Diocesan School for Girls</p>
+      ${name ? `<p class="name">${escapeHtml(name)}</p>` : ''}
+      <table>
+        <thead><tr><th>Date</th><th>Time</th><th>Session</th><th>Presenter</th><th>Room</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <p class="footer">Generated ${new Date().toLocaleString('en-NZ')}. Swap picks until ${formatCutoff()}.</p>
+      <script>window.onload = () => { window.print(); };<\/script>
+      </body></html>`;
+
+    const w = window.open('', '_blank');
+    if (!w) { toast('Pop-up blocked. Allow pop-ups and try again.', 'error'); return; }
+    w.document.write(html);
+    w.document.close();
+  }
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function icsEscape(s) {
+    return String(s || '')
+      .replace(/\\/g, '\\\\').replace(/\n/g, '\\n')
+      .replace(/,/g, '\\,').replace(/;/g, '\\;');
+  }
+  function nowUtcStamp() {
+    const d = new Date();
+    return d.getUTCFullYear() + pad(d.getUTCMonth()+1) + pad(d.getUTCDate())
+         + 'T' + pad(d.getUTCHours()) + pad(d.getUTCMinutes()) + pad(d.getUTCSeconds()) + 'Z';
+  }
+  function localStamp(dateIso, hhmmss) {
+    return dateIso.replace(/-/g, '') + 'T' + hhmmss.slice(0,8).replace(/:/g, '');
+  }
+
+  function downloadIcs() {
+    const items = [...myPicks].sort((a,b) =>
+      (a.session_date || '').localeCompare(b.session_date || '')
+      || (a.start_time || '').localeCompare(b.start_time || '')
+    );
+    if (items.length === 0) return;
+    const eventName = settings.event_name || 'Event';
+    const dtstamp = nowUtcStamp();
+
+    const lines = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Dio Event Signup//EN',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+      'BEGIN:VTIMEZONE',
+      'TZID:Pacific/Auckland',
+      'BEGIN:STANDARD',
+      'DTSTART:19700405T030000','TZOFFSETFROM:+1300','TZOFFSETTO:+1200','TZNAME:NZST',
+      'RRULE:FREQ=YEARLY;BYMONTH=4;BYDAY=1SU','END:STANDARD',
+      'BEGIN:DAYLIGHT',
+      'DTSTART:19700927T020000','TZOFFSETFROM:+1200','TZOFFSETTO:+1300','TZNAME:NZDT',
+      'RRULE:FREQ=YEARLY;BYMONTH=9;BYDAY=-1SU','END:DAYLIGHT',
+      'END:VTIMEZONE',
+    ];
+    for (const p of items) {
+      lines.push(
+        'BEGIN:VEVENT',
+        `UID:${p.session_id}@diocesan.school.nz`,
+        `DTSTAMP:${dtstamp}`,
+        `DTSTART;TZID=Pacific/Auckland:${localStamp(p.session_date, p.start_time)}`,
+        `DTEND;TZID=Pacific/Auckland:${localStamp(p.session_date, p.end_time)}`,
+        `SUMMARY:${icsEscape(eventName + ': ' + p.title)}`,
+        `LOCATION:${icsEscape((p.room ? 'Room ' + p.room + ', ' : '') + 'Diocesan School for Girls')}`,
+        `DESCRIPTION:${icsEscape((p.presenter ? 'Presenter: ' + p.presenter + '\n' : '') + eventName + ' session.')}`,
+        'END:VEVENT'
+      );
+    }
+    lines.push('END:VCALENDAR');
+
+    const blob = new Blob([lines.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${(eventName || 'event').replace(/[^a-z0-9]+/gi,'-').toLowerCase()}-picks.ics`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('Calendar file downloaded.', 'success');
+  }
+
+  $('#print-picks').addEventListener('click', printMyPicks);
+  $('#save-calendar').addEventListener('click', downloadIcs);
+
+  // ---- polling ----
+  function startPolling() {
+    if (pollHandle) clearInterval(pollHandle);
+    pollHandle = setInterval(async () => {
+      try {
+        await Promise.all([loadSessionsAndSeats(), loadSettings()]);
+        render();
+      } catch (e) {}
+    }, 10_000);
+  }
+
+  async function main() {
+    if (window.location.hash.includes('access_token') || window.location.hash.includes('error')) {
+      await new Promise(r => setTimeout(r, 400));
+    }
+    session = await getSession();
+    await loadSettings();
+    if (!session) {
+      $('#loading').hidden = true;
+      $('#signin-view').hidden = false;
+      return;
+    }
+
+    const email = session.user?.email || '';
+    const domain = settings.email_domain;
+    if (domain && domain !== '*' && domain !== '' && !email.toLowerCase().endsWith('@' + domain.toLowerCase())) {
+      toast(`Only @${domain} accounts can register.`, 'error');
+      await SB.auth.signOut();
+      setTimeout(() => location.reload(), 1500);
+      return;
+    }
+
+    const name = session.user.user_metadata?.full_name || session.user.user_metadata?.name || email;
+    $('#user-bar').innerHTML = `<span>${escapeHtml(name)}</span><button id="signout-btn">Sign out</button>`;
+    $('#signout-btn').addEventListener('click', signOut);
+
+    try {
+      await Promise.all([loadSessionsAndSeats(), loadMyPicks()]);
+      $('#loading').hidden = true;
+      $('#signup-view').hidden = false;
+      render();
+      startPolling();
+    } catch (e) {
+      console.error(e);
+      $('#loading').innerHTML = '<p style="color:var(--red)">Couldn\'t load data. Try refreshing.</p>';
+    }
+  }
+
+  SB.auth.onAuthStateChange((event) => {
+    if (event === 'SIGNED_OUT') location.reload();
+  });
+
+  main();
+</script>
+
 </body>
 </html>

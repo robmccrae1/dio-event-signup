@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en-NZ">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin · Sessions</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%231a3a6e'/%3E%3Ctext x='50' y='68' text-anchor='middle' font-family='-apple-system,sans-serif' font-size='62' font-weight='700' fill='white'%3ED%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    --navy: #1a3a6e; --bg: #f6f7f9; --card: #fff; --border: #d8dde6;
+    --text: #1a1f2b; --muted: #6b7585; --green: #197d4a; --green-bg: #e6f4ec;
+    --amber: #b8721a; --amber-bg: #fdf2e0; --red: #b3261e; --red-bg: #fdecea;
+    --blue-bg: #e7eef9;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.5;
+  }
+  header {
+    background: var(--navy); color: white; padding: 14px 24px;
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 12px;
+  }
+  header h1 { margin: 0; font-size: 18px; font-weight: 600; }
+  header .links { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  header a, header button {
+    background: rgba(255,255,255,0.15); color: white;
+    border: 1px solid rgba(255,255,255,0.3);
+    padding: 6px 12px; border-radius: 4px; text-decoration: none;
+    font-size: 13px; cursor: pointer;
+  }
+  header a:hover, header button:hover { background: rgba(255,255,255,0.25); }
+
+  main { max-width: 1400px; margin: 0 auto; padding: 24px 16px 60px; }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 24px;
+  }
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 20px;
+  }
+  .card h2 { margin: 0 0 12px; font-size: 16px; color: var(--navy); }
+
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+  .field input, .field textarea {
+    width: 100%; padding: 8px 12px; border: 1px solid var(--border);
+    border-radius: 6px; font-size: 14px; font-family: inherit;
+  }
+  .field-row { display: flex; gap: 12px; }
+  .field-row .field { flex: 1; }
+  .field-hint { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  .form-actions {
+    display: flex; gap: 8px; margin-top: 16px; padding-top: 16px;
+    border-top: 1px solid var(--border); align-items: center;
+  }
+  button.primary {
+    background: var(--navy); color: white; border: none;
+    padding: 9px 18px; border-radius: 6px; font-size: 14px;
+    cursor: pointer; font-weight: 500;
+  }
+  button.primary:hover { background: #122a52; }
+  button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  button.secondary {
+    background: white; color: var(--navy); border: 1px solid var(--border);
+    padding: 9px 14px; border-radius: 6px; font-size: 14px; cursor: pointer;
+  }
+  button.secondary:hover { background: #f0f3f8; }
+  button.danger {
+    background: var(--red-bg); color: var(--red);
+    border: 1px solid var(--red); padding: 6px 10px;
+    border-radius: 4px; font-size: 12px; cursor: pointer;
+  }
+  button.danger:hover { background: var(--red); color: white; }
+
+  table.sessions {
+    width: 100%; border-collapse: collapse; font-size: 13px;
+  }
+  table.sessions th, table.sessions td {
+    padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  table.sessions th {
+    background: var(--navy); color: white; font-weight: 600;
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px;
+    position: sticky; top: 0;
+  }
+  table.sessions tr:hover td { background: var(--blue-bg); }
+  table.sessions .actions { display: flex; gap: 6px; }
+  table.sessions .actions button {
+    background: none; border: 1px solid var(--border);
+    padding: 4px 10px; border-radius: 4px; font-size: 12px; cursor: pointer;
+  }
+  table.sessions .actions button:hover { background: var(--blue-bg); border-color: var(--navy); }
+  table.sessions .actions button.danger { color: var(--red); border-color: var(--red); }
+  table.sessions .actions button.danger:hover { background: var(--red); color: white; }
+  table.sessions .cap-cell { white-space: nowrap; }
+  table.sessions .full-tag {
+    display: inline-block; padding: 1px 6px; background: var(--red-bg);
+    color: var(--red); border-radius: 3px; font-size: 11px; font-weight: 600;
+    margin-left: 4px;
+  }
+
+  .empty-state {
+    padding: 40px; text-align: center; color: var(--muted);
+    font-style: italic;
+  }
+
+  #loading, #not-admin { text-align: center; padding: 80px; color: var(--muted); }
+  #not-admin { color: var(--red); }
+
+  #toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    padding: 10px 20px; background: var(--text); color: white;
+    border-radius: 6px; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 100;
+  }
+  #toast.show { opacity: 1; }
+  #toast.error { background: var(--red); }
+  #toast.success { background: var(--green); }
+
+  .editing-badge {
+    display: inline-block; padding: 2px 8px; background: var(--blue-bg);
+    color: var(--navy); border-radius: 12px; font-size: 11px;
+    font-weight: 600; margin-left: 8px;
+  }
+
+  /* Confirm dialog */
+  .modal-bg {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200;
+  }
+  .modal {
+    background: white; border-radius: 8px; padding: 24px; max-width: 440px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  }
+  .modal h3 { margin: 0 0 8px; color: var(--navy); }
+  .modal p { margin: 8px 0 16px; color: var(--text); }
+  .modal .actions { display: flex; gap: 8px; justify-content: flex-end; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Sessions</h1>
+  <div class="links">
+    <a href="/">← Signup</a>
+    <a href="/admin">Registrations</a>
+    <a href="/admin-settings">Event settings</a>
+    <a href="/print">Attendance sheets</a>
+    <span id="admin-email" style="font-size:13px;opacity:0.85"></span>
+    <button id="signout-btn">Sign out</button>
+  </div>
+</header>
+
+<main>
+  <div id="loading">Loading…</div>
+  <div id="not-admin" hidden><h2>Not authorised</h2></div>
+
+  <div id="content" hidden>
+    <div class="layout">
+
+      <div class="card">
+        <h2>
+          <span id="form-mode-title">Add a new session</span>
+          <span id="editing-badge" class="editing-badge" hidden>editing</span>
+        </h2>
+
+        <div class="field">
+          <label for="title">Title *</label>
+          <input id="title" type="text" placeholder="e.g. Intro to NotebookLM">
+        </div>
+        <div class="field">
+          <label for="presenter">Presenter</label>
+          <input id="presenter" type="text" placeholder="e.g. Susan">
+        </div>
+        <div class="field">
+          <label for="description">Description</label>
+          <textarea id="description" rows="2" placeholder="Optional, shown in attendee detail"></textarea>
+        </div>
+        <div class="field">
+          <label for="session_date">Date *</label>
+          <input id="session_date" type="date">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="start_time">Start *</label>
+            <input id="start_time" type="time">
+          </div>
+          <div class="field">
+            <label for="end_time">End *</label>
+            <input id="end_time" type="time">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="room">Room</label>
+            <input id="room" type="text" placeholder="e.g. C134">
+          </div>
+          <div class="field">
+            <label for="capacity">Capacity *</label>
+            <input id="capacity" type="number" min="1" step="1" value="25">
+          </div>
+        </div>
+        <div class="field">
+          <label for="display_order">Display order</label>
+          <input id="display_order" type="number" step="1" value="0">
+          <div class="field-hint">Lower numbers come first within a date. Leave 0 if unsure.</div>
+        </div>
+
+        <div class="form-actions">
+          <button id="save-btn" class="primary">Add session</button>
+          <button id="cancel-edit-btn" class="secondary" hidden>Cancel</button>
+          <button id="duplicate-btn" class="secondary" hidden title="Save then immediately re-add with the same details">Save &amp; duplicate</button>
+        </div>
+      </div>
+
+      <div class="card" style="padding: 0; overflow: hidden;">
+        <table class="sessions" id="sessions-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Title</th>
+              <th>Presenter</th>
+              <th>Room</th>
+              <th>Cap</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="sessions-tbody"></tbody>
+        </table>
+        <div id="empty-state" class="empty-state" hidden>No sessions yet. Add one on the left.</div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<div id="toast"></div>
+<div id="modal-root"></div>
+
+<script src="config.js"></script>
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
+
+  const SB = createClient(window.SUPABASE_CONFIG.url, window.SUPABASE_CONFIG.publishableKey,
+    { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+
+  const $ = (s) => document.querySelector(s);
+  const toastEl = $('#toast');
+  function toast(msg, kind='info') {
+    toastEl.textContent = msg;
+    toastEl.className = 'show ' + kind;
+    setTimeout(() => toastEl.className = '', 3000);
+  }
+
+  function escapeHtml(s) {
+    if (s == null) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+  }
+  function formatDate(iso) {
+    return new Date(iso + 'T00:00:00').toLocaleDateString('en-NZ', { weekday:'short', day:'numeric', month:'short' });
+  }
+  function formatTime(t) { return t ? t.slice(0,5) : ''; }
+
+  let editingId = null;
+  let allSessions = [];
+  let seatsBy = {};
+
+  async function load() {
+    const { data: { session } } = await SB.auth.getSession();
+    if (!session) { location.href = '/'; return; }
+    $('#admin-email').textContent = session.user.email;
+
+    const { data: isAdminData } = await SB.rpc('is_admin');
+    if (!isAdminData) {
+      $('#loading').hidden = true;
+      $('#not-admin').hidden = false;
+      return;
+    }
+
+    await refresh();
+    $('#loading').hidden = true;
+    $('#content').hidden = false;
+  }
+
+  async function refresh() {
+    const [{ data: ss, error: se }, { data: seats, error: ke }] = await Promise.all([
+      SB.from('sessions').select('*').order('session_date').order('start_time').order('display_order'),
+      SB.rpc('get_session_seats'),
+    ]);
+    if (se || ke) { toast('Failed to load sessions.', 'error'); return; }
+    allSessions = ss || [];
+    seatsBy = {};
+    for (const r of (seats || [])) seatsBy[r.session_id] = r;
+    renderTable();
+  }
+
+  function renderTable() {
+    const tbody = $('#sessions-tbody');
+    if (allSessions.length === 0) {
+      tbody.innerHTML = '';
+      $('#empty-state').hidden = false;
+      return;
+    }
+    $('#empty-state').hidden = true;
+
+    tbody.innerHTML = allSessions.map(s => {
+      const seat = seatsBy[s.id];
+      const taken = seat?.taken ?? 0;
+      const capCell = `${taken} / ${s.capacity}` + (taken >= s.capacity ? '<span class="full-tag">FULL</span>' : '');
+      return `
+        <tr data-id="${s.id}">
+          <td>${escapeHtml(formatDate(s.session_date))}</td>
+          <td>${escapeHtml(formatTime(s.start_time))}–${escapeHtml(formatTime(s.end_time))}</td>
+          <td><strong>${escapeHtml(s.title)}</strong></td>
+          <td>${escapeHtml(s.presenter || '')}</td>
+          <td>${escapeHtml(s.room || '')}</td>
+          <td class="cap-cell">${capCell}</td>
+          <td>
+            <div class="actions">
+              <button class="edit-btn" data-id="${s.id}">Edit</button>
+              <button class="dup-btn" data-id="${s.id}">Duplicate</button>
+              <button class="del-btn danger" data-id="${s.id}">Delete</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function readForm() {
+    return {
+      title:         $('#title').value.trim(),
+      presenter:     $('#presenter').value.trim() || null,
+      description:   $('#description').value.trim() || null,
+      session_date:  $('#session_date').value,
+      start_time:    $('#start_time').value,
+      end_time:      $('#end_time').value,
+      room:          $('#room').value.trim() || null,
+      capacity:      parseInt($('#capacity').value || '25', 10),
+      display_order: parseInt($('#display_order').value || '0', 10),
+    };
+  }
+  function clearForm() {
+    $('#title').value = '';
+    $('#presenter').value = '';
+    $('#description').value = '';
+    $('#session_date').value = '';
+    $('#start_time').value = '';
+    $('#end_time').value = '';
+    $('#room').value = '';
+    $('#capacity').value = 25;
+    $('#display_order').value = 0;
+    editingId = null;
+    $('#form-mode-title').textContent = 'Add a new session';
+    $('#editing-badge').hidden = true;
+    $('#save-btn').textContent = 'Add session';
+    $('#cancel-edit-btn').hidden = true;
+    $('#duplicate-btn').hidden = true;
+  }
+
+  function fillForm(s) {
+    $('#title').value = s.title || '';
+    $('#presenter').value = s.presenter || '';
+    $('#description').value = s.description || '';
+    $('#session_date').value = s.session_date || '';
+    $('#start_time').value = s.start_time?.slice(0,5) || '';
+    $('#end_time').value = s.end_time?.slice(0,5) || '';
+    $('#room').value = s.room || '';
+    $('#capacity').value = s.capacity ?? 25;
+    $('#display_order').value = s.display_order ?? 0;
+  }
+
+  function startEdit(id) {
+    const s = allSessions.find(x => x.id === id);
+    if (!s) return;
+    editingId = id;
+    fillForm(s);
+    $('#form-mode-title').textContent = 'Edit session';
+    $('#editing-badge').hidden = false;
+    $('#save-btn').textContent = 'Save changes';
+    $('#cancel-edit-btn').hidden = false;
+    $('#duplicate-btn').hidden = true;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function startDuplicate(id) {
+    const s = allSessions.find(x => x.id === id);
+    if (!s) return;
+    editingId = null;
+    fillForm(s);
+    $('#form-mode-title').textContent = 'Add a new session';
+    $('#editing-badge').hidden = true;
+    $('#save-btn').textContent = 'Add session';
+    $('#cancel-edit-btn').hidden = false;
+    $('#duplicate-btn').hidden = true;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    toast('Form pre-filled — edit time/date as needed and add.', 'info');
+  }
+
+  async function save() {
+    const form = readForm();
+    if (!form.title) { toast('Title is required.', 'error'); return; }
+    if (!form.session_date) { toast('Date is required.', 'error'); return; }
+    if (!form.start_time || !form.end_time) { toast('Start and end time are required.', 'error'); return; }
+    if (form.end_time <= form.start_time) { toast('End time must be after start time.', 'error'); return; }
+    if (!form.capacity || form.capacity < 1) { toast('Capacity must be at least 1.', 'error'); return; }
+
+    const params = {
+      p_id:            editingId,
+      p_title:         form.title,
+      p_presenter:     form.presenter,
+      p_description:   form.description,
+      p_session_date:  form.session_date,
+      p_start_time:    form.start_time,
+      p_end_time:      form.end_time,
+      p_room:          form.room,
+      p_capacity:      form.capacity,
+      p_display_order: form.display_order,
+    };
+
+    const btn = $('#save-btn');
+    btn.disabled = true;
+    try {
+      const { data, error } = await SB.rpc('admin_upsert_session', params);
+      if (error) throw error;
+      toast(editingId ? 'Updated.' : 'Added.', 'success');
+      clearForm();
+      await refresh();
+    } catch (e) {
+      console.error(e);
+      toast('Save failed: ' + (e.message || e), 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function deleteSession(id, force = false) {
+    const { data, error } = await SB.rpc('admin_delete_session', { p_session_id: id, p_force: force });
+    if (error) { toast('Delete failed: ' + error.message, 'error'); return; }
+    if (data.ok === false && data.error === 'has_registrations') {
+      showConfirm(
+        'Session has registrations',
+        `This session has ${data.count} registration${data.count === 1 ? '' : 's'}. Deleting will cancel those registrations. Continue?`,
+        async () => { await deleteSession(id, true); }
+      );
+      return;
+    }
+    toast('Deleted.', 'success');
+    await refresh();
+  }
+
+  function showConfirm(title, body, onConfirm) {
+    const root = $('#modal-root');
+    root.innerHTML = `
+      <div class="modal-bg">
+        <div class="modal">
+          <h3>${escapeHtml(title)}</h3>
+          <p>${escapeHtml(body)}</p>
+          <div class="actions">
+            <button class="secondary" id="modal-cancel">Cancel</button>
+            <button class="primary" id="modal-ok">Continue</button>
+          </div>
+        </div>
+      </div>`;
+    $('#modal-cancel').addEventListener('click', () => { root.innerHTML = ''; });
+    $('#modal-ok').addEventListener('click', async () => { root.innerHTML = ''; await onConfirm(); });
+  }
+
+  // Delegated row actions
+  $('#sessions-tbody').addEventListener('click', (e) => {
+    const id = e.target.dataset.id;
+    if (!id) return;
+    if (e.target.classList.contains('edit-btn'))   startEdit(id);
+    else if (e.target.classList.contains('dup-btn')) startDuplicate(id);
+    else if (e.target.classList.contains('del-btn')) {
+      const s = allSessions.find(x => x.id === id);
+      showConfirm(
+        'Delete this session?',
+        `"${s?.title || 'this session'}" — this can't be undone.`,
+        () => deleteSession(id, false)
+      );
+    }
+  });
+
+  $('#save-btn').addEventListener('click', save);
+  $('#cancel-edit-btn').addEventListener('click', clearForm);
+  $('#signout-btn').addEventListener('click', async () => {
+    await SB.auth.signOut();
+    location.href = '/';
+  });
+
+  load();
+</script>
+
+</body>
+</html>

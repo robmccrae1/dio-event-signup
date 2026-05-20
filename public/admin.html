@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en-NZ">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin · Registrations</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%231a3a6e'/%3E%3Ctext x='50' y='68' text-anchor='middle' font-family='-apple-system,sans-serif' font-size='62' font-weight='700' fill='white'%3ED%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    --navy: #1a3a6e; --bg: #f6f7f9; --card: #fff; --border: #d8dde6;
+    --text: #1a1f2b; --muted: #6b7585; --green: #197d4a; --green-bg: #e6f4ec;
+    --amber: #b8721a; --amber-bg: #fdf2e0; --red: #b3261e; --red-bg: #fdecea;
+    --blue-bg: #e7eef9;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.5;
+  }
+  header {
+    background: var(--navy); color: white; padding: 14px 24px;
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 12px;
+  }
+  header h1 { margin: 0; font-size: 18px; font-weight: 600; }
+  header .links { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  header a, header button {
+    background: rgba(255,255,255,0.15); color: white;
+    border: 1px solid rgba(255,255,255,0.3);
+    padding: 6px 12px; border-radius: 4px; text-decoration: none;
+    font-size: 13px; cursor: pointer;
+  }
+  header a:hover, header button:hover { background: rgba(255,255,255,0.25); }
+  main { max-width: 1400px; margin: 0 auto; padding: 20px 16px 60px; }
+
+  .summary {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px 20px; margin-bottom: 20px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px;
+  }
+  .stat { display: flex; flex-direction: column; gap: 2px; }
+  .stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-value { font-size: 24px; font-weight: 600; color: var(--navy); }
+
+  .toolbar {
+    display: flex; gap: 12px; margin-bottom: 16px; align-items: center; flex-wrap: wrap;
+  }
+  .toolbar input[type=search] {
+    flex: 1; min-width: 240px; padding: 8px 12px; border: 1px solid var(--border);
+    border-radius: 6px; font-size: 14px;
+  }
+  .toolbar button {
+    background: var(--navy); color: white; border: none;
+    padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;
+  }
+  .toolbar button.secondary { background: white; color: var(--navy); border: 1px solid var(--border); }
+  .toolbar button:hover { background: #122a52; }
+  .toolbar button.secondary:hover { background: #f0f3f8; }
+  .view-toggle { display: flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .view-toggle button {
+    background: white; color: var(--navy); border: none;
+    padding: 8px 14px; cursor: pointer; font-size: 13px;
+  }
+  .view-toggle button.active { background: var(--navy); color: white; }
+
+  .day-block {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; margin-bottom: 20px; overflow: hidden;
+  }
+  .day-block-header { background: var(--navy); color: white; padding: 10px 16px; font-weight: 600; }
+  .day-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1px; background: var(--border);
+  }
+  .session-block { background: var(--card); padding: 10px 14px; }
+  .session-block-title { font-weight: 600; font-size: 13px; }
+  .session-block-meta { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+  .session-block-count {
+    font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 3px;
+    display: inline-block; margin-bottom: 6px;
+  }
+  .session-block-count.ok   { background: var(--green-bg); color: var(--green); }
+  .session-block-count.warn { background: var(--amber-bg); color: var(--amber); }
+  .session-block-count.full { background: var(--red-bg); color: var(--red); }
+  .session-block ul { list-style: none; padding: 0; margin: 0; }
+  .session-block li {
+    font-size: 12px; padding: 2px 0; color: var(--text);
+    border-top: 1px solid var(--bg);
+  }
+  .session-block li:first-child { border-top: none; }
+
+  table {
+    width: 100%; border-collapse: collapse;
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+  }
+  th, td { padding: 8px 12px; text-align: left; font-size: 13px; }
+  th { background: var(--navy); color: white; font-weight: 600; }
+  tr:nth-child(even) { background: #fafbfc; }
+  tr:hover { background: var(--blue-bg); }
+
+  .hint { color: var(--muted); font-size: 13px; margin-top: 8px; }
+
+  #loading, #not-admin { text-align: center; padding: 80px; color: var(--muted); }
+  #not-admin { color: var(--red); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Registrations</h1>
+  <div class="links">
+    <a href="/">← Signup</a>
+    <a href="/admin-sessions">Sessions</a>
+    <a href="/admin-settings">Event settings</a>
+    <a href="/print">Attendance sheets</a>
+    <span id="admin-email" style="font-size:13px;opacity:0.85"></span>
+    <button id="signout-btn">Sign out</button>
+  </div>
+</header>
+
+<main>
+  <div id="loading">Loading…</div>
+  <div id="not-admin" hidden><h2>Not authorised</h2></div>
+
+  <div id="content" hidden>
+    <div class="summary" id="summary"></div>
+
+    <div class="toolbar">
+      <input type="search" id="search" placeholder="Search by name or email…">
+      <div class="view-toggle">
+        <button id="view-grid" class="active">Grid view</button>
+        <button id="view-table">Table view</button>
+      </div>
+      <button id="refresh">↻ Refresh</button>
+      <button id="export-csv-by-day" class="secondary">⬇ CSV by day</button>
+      <button id="export-csv-by-staff" class="secondary">⬇ CSV by staff</button>
+    </div>
+
+    <div id="grid-view"></div>
+    <div id="table-view" hidden></div>
+
+    <p class="hint">Last loaded: <span id="loaded-at"></span></p>
+  </div>
+</main>
+
+<script src="config.js"></script>
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
+
+  const SB = createClient(window.SUPABASE_CONFIG.url, window.SUPABASE_CONFIG.publishableKey,
+    { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+
+  const $ = (s) => document.querySelector(s);
+  let sessionsList = [];
+  let registrations = [];
+  let seats = [];
+  let view = 'grid';
+  let searchTerm = '';
+
+  function escapeHtml(s) {
+    if (s == null) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+  }
+  function formatDate(iso) {
+    return new Date(iso + 'T00:00:00').toLocaleDateString('en-NZ', { weekday:'short', day:'numeric', month:'short', year: 'numeric' });
+  }
+  function formatTime(t) { return t ? t.slice(0,5) : ''; }
+  function sortKey(r) {
+    const name = (r.user_name || '').trim();
+    const email = (r.user_email || '').toLowerCase();
+    return name ? name.toLowerCase() + '|' + email : email;
+  }
+
+  async function main() {
+    const { data: { session } } = await SB.auth.getSession();
+    if (!session) { location.href = '/'; return; }
+    $('#admin-email').textContent = session.user.email;
+
+    try {
+      const [sessionsR, regsR, seatsR] = await Promise.all([
+        SB.from('sessions').select('*').order('session_date').order('start_time').order('display_order'),
+        SB.rpc('admin_get_all_registrations'),
+        SB.rpc('get_session_seats'),
+      ]);
+
+      if (regsR.error) {
+        if (regsR.error.message?.includes('forbidden') || regsR.error.code === 'P0001') {
+          $('#loading').hidden = true; $('#not-admin').hidden = false;
+          return;
+        }
+        throw regsR.error;
+      }
+
+      sessionsList = sessionsR.data;
+      registrations = regsR.data;
+      seats = seatsR.data;
+
+      $('#loading').hidden = true;
+      $('#content').hidden = false;
+      render();
+    } catch (e) {
+      console.error(e);
+      $('#loading').innerHTML = '<p style="color:var(--red)">Could not load admin data: ' + escapeHtml(e.message || e) + '</p>';
+    }
+  }
+
+  function render() {
+    renderSummary();
+    if (view === 'grid') renderGrid(); else renderTable();
+    $('#loaded-at').textContent = new Date().toLocaleString('en-NZ');
+  }
+
+  function renderSummary() {
+    const totalRegs = registrations.length;
+    const uniqueStaff = new Set(registrations.map(r => r.user_email)).size;
+    const totalCapacity = seats.reduce((a, s) => a + (s.capacity || 0), 0);
+    const totalTaken = seats.reduce((a, s) => a + (s.taken || 0), 0);
+    const fullSessions = seats.filter(s => s.taken >= s.capacity && s.capacity > 0).length;
+    $('#summary').innerHTML = `
+      <div class="stat"><span class="stat-label">Registered people</span><span class="stat-value">${uniqueStaff}</span></div>
+      <div class="stat"><span class="stat-label">Total picks made</span><span class="stat-value">${totalRegs}</span></div>
+      <div class="stat"><span class="stat-label">Seats taken</span><span class="stat-value">${totalTaken} / ${totalCapacity}</span></div>
+      <div class="stat"><span class="stat-label">Sessions</span><span class="stat-value">${sessionsList.length}</span></div>
+      <div class="stat"><span class="stat-label">Sessions full</span><span class="stat-value">${fullSessions}</span></div>
+    `;
+  }
+
+  function renderGrid() {
+    $('#grid-view').hidden = false;
+    $('#table-view').hidden = true;
+
+    if (sessionsList.length === 0) {
+      $('#grid-view').innerHTML = '<p style="text-align:center;color:var(--muted);padding:40px">No sessions configured yet. Visit <a href="/admin-sessions">Sessions</a> to add some.</p>';
+      return;
+    }
+
+    const bySession = {};
+    for (const r of registrations) (bySession[r.session_id] ||= []).push(r);
+
+    // group sessions by date
+    const dates = {};
+    for (const s of sessionsList) (dates[s.session_date] ||= []).push(s);
+
+    const q = searchTerm.toLowerCase();
+    const filterMatches = (r) => !q
+      || (r.user_email || '').toLowerCase().includes(q)
+      || (r.user_name || '').toLowerCase().includes(q);
+
+    const html = Object.keys(dates).sort().map(date => {
+      const items = dates[date];
+      const cards = items.map(s => {
+        const all = bySession[s.id] || [];
+        const filtered = all.filter(filterMatches);
+        const seat = seats.find(x => x.session_id === s.id);
+        const cap = seat ? seat.capacity : (s.capacity || 0);
+        const taken = all.length;
+        let countClass = 'ok';
+        if (cap > 0 && taken >= cap) countClass = 'full';
+        else if (cap > 0 && taken >= cap * 0.8) countClass = 'warn';
+
+        const list = filtered
+          .sort((a, b) => sortKey(a).localeCompare(sortKey(b)))
+          .map(r => `<li>${escapeHtml(r.user_name || r.user_email)}</li>`)
+          .join('');
+
+        const dimmed = q && filtered.length === 0 ? 'opacity:0.3;' : '';
+
+        return `
+          <div class="session-block" style="${dimmed}">
+            <div class="session-block-title">${escapeHtml(s.title)}</div>
+            <div class="session-block-meta">${escapeHtml(formatTime(s.start_time))}–${escapeHtml(formatTime(s.end_time))}${s.presenter ? ' · ' + escapeHtml(s.presenter) : ''}${s.room ? ' · ' + escapeHtml(s.room) : ''}</div>
+            <div class="session-block-count ${countClass}">${taken} / ${cap}</div>
+            <ul>${list || '<li style="color:var(--muted);font-style:italic">—</li>'}</ul>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="day-block">
+          <div class="day-block-header">${escapeHtml(formatDate(date))}</div>
+          <div class="day-grid">${cards}</div>
+        </div>
+      `;
+    }).join('');
+
+    $('#grid-view').innerHTML = html;
+  }
+
+  function renderTable() {
+    $('#grid-view').hidden = true;
+    $('#table-view').hidden = false;
+
+    const q = searchTerm.toLowerCase();
+    const rows = registrations
+      .filter(r => !q
+        || (r.user_email || '').toLowerCase().includes(q)
+        || (r.user_name || '').toLowerCase().includes(q))
+      .sort((a, b) => sortKey(a).localeCompare(sortKey(b))
+        || (a.session_date || '').localeCompare(b.session_date || '')
+        || (a.start_time || '').localeCompare(b.start_time || ''));
+
+    if (rows.length === 0) {
+      $('#table-view').innerHTML = '<p>No registrations match.</p>';
+      return;
+    }
+
+    $('#table-view').innerHTML = `
+      <table>
+        <thead><tr>
+          <th>Name</th><th>Email</th><th>Date</th><th>Time</th><th>Session</th><th>Presenter</th><th>Room</th><th>Registered at</th>
+        </tr></thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr>
+              <td>${escapeHtml(r.user_name || '')}</td>
+              <td>${escapeHtml(r.user_email)}</td>
+              <td>${escapeHtml(formatDate(r.session_date))}</td>
+              <td>${escapeHtml(formatTime(r.start_time))}–${escapeHtml(formatTime(r.end_time))}</td>
+              <td>${escapeHtml(r.title)}</td>
+              <td>${escapeHtml(r.presenter || '')}</td>
+              <td>${escapeHtml(r.room || '')}</td>
+              <td>${new Date(r.created_at).toLocaleString('en-NZ')}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function exportCSV(mode) {
+    const headers = ['Name', 'Email', 'Date', 'Start', 'End', 'Session', 'Presenter', 'Room', 'Registered at'];
+    const rows = [...registrations];
+    if (mode === 'by-staff') {
+      rows.sort((a, b) => sortKey(a).localeCompare(sortKey(b))
+        || (a.session_date || '').localeCompare(b.session_date || '')
+        || (a.start_time || '').localeCompare(b.start_time || ''));
+    } else {
+      rows.sort((a, b) => (a.session_date || '').localeCompare(b.session_date || '')
+        || (a.start_time || '').localeCompare(b.start_time || '')
+        || (a.title || '').localeCompare(b.title || '')
+        || sortKey(a).localeCompare(sortKey(b)));
+    }
+    const escape = (v) => {
+      const s = (v == null) ? '' : String(v);
+      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    };
+    const csv = [
+      headers.join(','),
+      ...rows.map(r => [
+        r.user_name, r.user_email, r.session_date, r.start_time, r.end_time,
+        r.title, r.presenter, r.room, r.created_at
+      ].map(escape).join(','))
+    ].join('\r\n');
+
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
+    a.href = url;
+    a.download = `registrations-${mode}-${stamp}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  $('#refresh').addEventListener('click', main);
+  $('#export-csv-by-day').addEventListener('click',   () => exportCSV('by-day'));
+  $('#export-csv-by-staff').addEventListener('click', () => exportCSV('by-staff'));
+  $('#search').addEventListener('input', (e) => { searchTerm = e.target.value.trim(); render(); });
+  $('#view-grid').addEventListener('click', () => {
+    view = 'grid'; $('#view-grid').classList.add('active'); $('#view-table').classList.remove('active'); render();
+  });
+  $('#view-table').addEventListener('click', () => {
+    view = 'table'; $('#view-table').classList.add('active'); $('#view-grid').classList.remove('active'); render();
+  });
+  $('#signout-btn').addEventListener('click', async () => {
+    await SB.auth.signOut();
+    location.href = '/';
+  });
+
+  main();
+</script>
+
+</body>
+</html>
