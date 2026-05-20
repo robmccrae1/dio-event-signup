@@ -420,6 +420,19 @@
     if (form.end_time <= form.start_time) { toast('End time must be after start time.', 'error'); return; }
     if (!form.capacity || form.capacity < 1) { toast('Capacity must be at least 1.', 'error'); return; }
 
+    // Warn before reducing capacity below current registrations
+    if (editingId) {
+      const seat = seatsBy[editingId];
+      const taken = seat?.taken ?? 0;
+      if (form.capacity < taken) {
+        const ok = await confirmAsync(
+          'Reduce capacity below current registrations?',
+          `This session has ${taken} registration${taken === 1 ? '' : 's'} but you're setting the cap to ${form.capacity}. Existing registrations stay, but no new ones can be made until people drop out. Continue?`
+        );
+        if (!ok) return;
+      }
+    }
+
     const params = {
       p_id:            editingId,
       p_title:         form.title,
@@ -465,20 +478,27 @@
   }
 
   function showConfirm(title, body, onConfirm) {
-    const root = $('#modal-root');
-    root.innerHTML = `
-      <div class="modal-bg">
-        <div class="modal">
-          <h3>${escapeHtml(title)}</h3>
-          <p>${escapeHtml(body)}</p>
-          <div class="actions">
-            <button class="secondary" id="modal-cancel">Cancel</button>
-            <button class="primary" id="modal-ok">Continue</button>
+    confirmAsync(title, body).then(ok => { if (ok) onConfirm(); });
+  }
+
+  // Returns a Promise<boolean> — true if user confirmed, false if cancelled.
+  function confirmAsync(title, body) {
+    return new Promise(resolve => {
+      const root = $('#modal-root');
+      root.innerHTML = `
+        <div class="modal-bg">
+          <div class="modal">
+            <h3>${escapeHtml(title)}</h3>
+            <p>${escapeHtml(body)}</p>
+            <div class="actions">
+              <button class="secondary" id="modal-cancel">Cancel</button>
+              <button class="primary" id="modal-ok">Continue</button>
+            </div>
           </div>
-        </div>
-      </div>`;
-    $('#modal-cancel').addEventListener('click', () => { root.innerHTML = ''; });
-    $('#modal-ok').addEventListener('click', async () => { root.innerHTML = ''; await onConfirm(); });
+        </div>`;
+      $('#modal-cancel').addEventListener('click', () => { root.innerHTML = ''; resolve(false); });
+      $('#modal-ok').addEventListener('click',     () => { root.innerHTML = ''; resolve(true);  });
+    });
   }
 
   // Delegated row actions

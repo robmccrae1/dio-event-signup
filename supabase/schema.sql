@@ -490,7 +490,7 @@ $$;
 grant execute on function public.admin_delete_session(uuid, boolean) to authenticated;
 
 
--- Update a setting
+-- Update a setting. Whitelist of allowed keys to prevent typos polluting the table.
 create or replace function public.admin_set_setting(p_key text, p_value text)
 returns json
 language plpgsql
@@ -500,6 +500,20 @@ as $$
 begin
   if not public.is_admin() then
     raise exception 'forbidden';
+  end if;
+
+  if p_key not in (
+    'event_name',
+    'event_subtitle',
+    'event_intro',
+    'edit_cutoff_iso',
+    'email_domain',
+    'max_picks',
+    'enforce_no_duplicate_titles',
+    'enforce_no_time_conflicts',
+    'event_open'
+  ) then
+    raise exception 'unknown_setting_key: %', p_key;
   end if;
 
   insert into public.settings (key, value) values (p_key, p_value)

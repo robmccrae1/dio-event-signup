@@ -133,6 +133,7 @@
     <a href="/admin-sessions">Sessions</a>
     <a href="/admin-settings">Event settings</a>
     <span id="admin-email" style="font-size:13px;opacity:0.85"></span>
+    <button id="signout-btn">Sign out</button>
   </div>
 </div>
 
@@ -324,6 +325,10 @@
   });
   $('#refresh').addEventListener('click', load);
   $('#print').addEventListener('click', () => window.print());
+  $('#signout-btn').addEventListener('click', async () => {
+    await SB.auth.signOut();
+    location.href = '/';
+  });
 
   load();
 </script>

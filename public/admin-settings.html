@@ -156,7 +156,7 @@
       <div class="field">
         <label for="edit_cutoff_iso">Editing closes at</label>
         <input id="edit_cutoff_iso" type="datetime-local">
-        <div class="hint">After this, the signup page becomes read-only. NZ time.</div>
+        <div class="hint">After this, the signup page becomes read-only. Always NZ time, regardless of where you edit from. Avoid the DST transition hours (02:00–03:00 on the first Sunday of April or the last Sunday of September) just in case.</div>
       </div>
 
       <div class="field">
@@ -213,23 +213,21 @@
     return `${fmt.year}-${fmt.month}-${fmt.day}T${fmt.hour === '24' ? '00' : fmt.hour}:${fmt.minute}`;
   }
 
-  // datetime-local string → ISO-8601 (assume NZ time, calculate offset)
+  // datetime-local string (YYYY-MM-DDTHH:mm, intended as NZ-local) → ISO-8601.
+  // The naive approach (new Date(s+':00')) parses as the BROWSER's local time,
+  // which is wrong when the admin is editing from outside NZ. Instead we
+  // probe noon UTC on the input date — NZ DST transitions happen at 14:00 and
+  // 15:00 UTC, so noon UTC is always safely in a stable DST state for that date.
   function localInputToIso(s) {
     if (!s) return '';
-    // NZ is +12 (NZST) or +13 (NZDT). We'll determine which is active for the given date.
-    const probe = new Date(s + ':00');
-    const isoNoTz = s + ':00';
-    // Round-trip via Intl to find current NZ offset
-    const offsetMin = (() => {
-      const parts = new Intl.DateTimeFormat('en-NZ', {
-        timeZone: 'Pacific/Auckland', timeZoneName: 'short'
-      }).formatToParts(probe);
-      const tz = parts.find(p => p.type === 'timeZoneName')?.value || 'NZST';
-      return tz === 'NZDT' ? 13 * 60 : 12 * 60;
-    })();
-    const hh = String(Math.floor(offsetMin / 60)).padStart(2, '0');
-    const mm = String(offsetMin % 60).padStart(2, '0');
-    return `${isoNoTz}+${hh}:${mm}`;
+    const date = s.slice(0, 10);
+    const probe = new Date(date + 'T12:00:00Z');
+    const tzName = new Intl.DateTimeFormat('en-NZ', {
+      timeZone: 'Pacific/Auckland',
+      timeZoneName: 'short',
+    }).formatToParts(probe).find(p => p.type === 'timeZoneName')?.value || 'NZST';
+    const offset = (tzName === 'NZDT') ? '+13:00' : '+12:00';
+    return s + ':00' + offset;
   }
 
   async function load() {

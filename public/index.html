@@ -165,6 +165,7 @@
   .session-title { font-weight: 600; font-size: 14px; line-height: 1.3; }
   .session-meta { font-size: 12px; color: var(--muted); }
   .session-room { font-size: 11px; color: var(--muted); font-weight: 500; }
+  .session-description { font-size: 12px; color: var(--text); font-style: italic; line-height: 1.35; }
   .session-seats {
     margin-top: auto;
     font-size: 12px;
@@ -513,6 +514,7 @@
             <div class="session-title">${escapeHtml(s.title)}</div>
             ${s.presenter ? `<div class="session-meta">${escapeHtml(s.presenter)}</div>` : ''}
             ${s.room ? `<div class="session-room">Room ${escapeHtml(s.room)}</div>` : ''}
+            ${s.description ? `<div class="session-description">${escapeHtml(s.description)}</div>` : ''}
             ${isMine ? '<div class="cancel-hint">Click to cancel</div>' : ''}
             ${reason ? `<div class="session-disabled-reason">${escapeHtml(reason)}</div>` : ''}
             <div class="session-seats">${seatLabel}</div>

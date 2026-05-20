@@ -6,17 +6,17 @@ A generalised event signup system for Diocesan School for Girls. Configure any e
 
 | Thing | Where |
 |---|---|
-| Event name + subtitle | `/admin/settings` |
-| Number of sessions | `/admin/sessions` (add as many as you want) |
-| Date of each session | `/admin/sessions` (sessions can span multiple days) |
-| Start + end time of each session | `/admin/sessions` |
-| Title, presenter, room, description per session | `/admin/sessions` |
-| Seat capacity per session | `/admin/sessions` (different per session is fine) |
-| Max picks per staff member | `/admin/settings` |
-| "Can't pick the same title twice" rule | `/admin/settings` (toggle on/off) |
-| "Can't pick two sessions that overlap in time" rule | `/admin/settings` (toggle on/off) |
-| Edit cutoff (when picks lock) | `/admin/settings` |
-| Allowed email domain | `/admin/settings` (set to `*` to disable restriction) |
+| Event name + subtitle | `/admin-settings` |
+| Number of sessions | `/admin-sessions` (add as many as you want) |
+| Date of each session | `/admin-sessions` (sessions can span multiple days) |
+| Start + end time of each session | `/admin-sessions` |
+| Title, presenter, room, description per session | `/admin-sessions` |
+| Seat capacity per session | `/admin-sessions` (different per session is fine) |
+| Max picks per staff member | `/admin-settings` |
+| "Can't pick the same title twice" rule | `/admin-settings` (toggle on/off) |
+| "Can't pick two sessions that overlap in time" rule | `/admin-settings` (toggle on/off) |
+| Edit cutoff (when picks lock) | `/admin-settings` |
+| Allowed email domain | `/admin-settings` (set to `*` to disable restriction) |
 
 ## Stack
 
@@ -69,8 +69,8 @@ The workflow at `.github/workflows/keep-warm.yml` runs daily to keep the project
 ## First-time use
 
 1. Sign in to your live site as the admin email seeded in the schema (default: `rmccrae@diocesan.school.nz` — change in `schema.sql` if it should be someone else).
-2. Visit `/admin/settings` → configure event name, cutoff, pick rules.
-3. Visit `/admin/sessions` → add your sessions.
+2. Visit `/admin-settings` → configure event name, cutoff, pick rules.
+3. Visit `/admin-sessions` → add your sessions.
 4. Send the URL to your staff.
 
 ## Project structure
@@ -98,4 +98,4 @@ dio-event-signup/
 
 See `docs/OPERATIONS.md` (to be written once first event is configured).
 
-For now: everything you need to change is in `/admin/settings` or `/admin/sessions` — no SQL required for normal operations.
+For now: everything you need to change is in `/admin-settings` or `/admin-sessions` — no SQL required for normal operations.
