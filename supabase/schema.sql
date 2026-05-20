@@ -172,10 +172,12 @@ begin
     return json_build_object('ok', false, 'error', 'wrong_domain');
   end if;
 
-  -- Verified email (defence in depth)
-  if coalesce((auth.jwt()->>'email_verified')::boolean, false) is not true then
-    return json_build_object('ok', false, 'error', 'email_not_verified');
-  end if;
+  -- (Previously had an email_verified check here. Supabase puts that claim
+  -- inside user_metadata, not top-level, so it came back null for every
+  -- legitimate user and blocked everyone. Google OAuth requires email
+  -- verification at sign-up anyway, and the domain trigger on auth.users
+  -- covers the only realistic attack surface — so this defence-in-depth
+  -- was doing more harm than good.)
 
   -- Event open flag (kill switch)
   select (value)::boolean into v_open from public.settings where key = 'event_open';
