@@ -118,7 +118,7 @@ dio-event-signup/
 
 ## Pending / future enhancements
 
-- [ ] Hide past sessions from the public signup grid (admin still sees them for reporting)
+- [x] Hide past sessions from the public signup grid (admin still sees them)
 - [ ] Optional: per-session cutoffs (currently global)
 - [ ] Optional: multi-event support (one app, multiple concurrent events)
 - [ ] Optional: 24h-before reminder emails via Supabase Edge Functions

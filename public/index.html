@@ -438,6 +438,26 @@
         && a.end_time   > b.start_time;
   }
 
+  // Compute NZ-local "now" as { date: "YYYY-MM-DD", time: "HH:MM" }.
+  // Sessions ending before this point are hidden from the public grid.
+  function nzNow() {
+    const parts = new Intl.DateTimeFormat('en-NZ', {
+      timeZone: 'Pacific/Auckland',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    }).formatToParts(new Date()).reduce((acc, p) => { acc[p.type] = p.value; return acc; }, {});
+    const hh = parts.hour === '24' ? '00' : parts.hour;
+    return { date: `${parts.year}-${parts.month}-${parts.day}`, time: `${hh}:${parts.minute}` };
+  }
+
+  function isPast(s) {
+    const now = nzNow();
+    if (s.session_date < now.date) return true;
+    if (s.session_date > now.date) return false;
+    // Same day — hide once the session has ended
+    return (s.end_time || '00:00').slice(0, 5) < now.time;
+  }
+
   function pickedTitleClash(s) {
     return myPicks.some(p => p.session_id !== s.id && p.title?.toLowerCase() === s.title?.toLowerCase());
   }
@@ -456,19 +476,24 @@
       closedEl.hidden = true;
     }
 
-    if (sessionsList.length === 0) {
+    // Public grid hides past sessions. Admin pages still see everything.
+    const visibleSessions = sessionsList.filter(s => !isPast(s));
+
+    // Show "no sessions" banner if there's nothing upcoming. But still render
+    // my-picks below so people can see past picks + print / calendar.
+    if (visibleSessions.length === 0) {
       $('#no-sessions').hidden = false;
-      $('#my-picks').hidden = true;
-      $('#grid').innerHTML = '';
-      return;
+      $('#no-sessions').textContent = sessionsList.length === 0
+        ? 'No sessions have been set up yet. Check back soon.'
+        : 'No upcoming sessions. All scheduled sessions have already taken place.';
     } else {
       $('#no-sessions').hidden = true;
-      $('#my-picks').hidden = false;
     }
+    $('#my-picks').hidden = false;
 
-    // group sessions by date
+    // group visible sessions by date
     const groups = {};
-    for (const s of sessionsList) (groups[s.session_date] ||= []).push(s);
+    for (const s of visibleSessions) (groups[s.session_date] ||= []).push(s);
     const dates = Object.keys(groups).sort();
 
     const max = maxPicks();
