@@ -56,9 +56,18 @@
   header .user-bar button:hover { background: rgba(255,255,255,0.25); }
   main { max-width: 1200px; margin: 0 auto; padding: 20px 16px 60px; }
 
-  #signin-view { text-align: center; padding: 60px 20px 80px; }
+  #signin-view { text-align: center; padding: 24px 20px 80px; }
   #signin-view h2 { margin: 0 0 12px; color: var(--navy); }
   #signin-view p { color: var(--muted); max-width: 480px; margin: 0 auto 24px; }
+  #signin-view .splash {
+    display: block;
+    width: 100%;
+    max-width: 900px;
+    height: auto;
+    margin: 0 auto 32px;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  }
   #google-signin {
     background: white;
     border: 1px solid var(--border);
@@ -257,6 +266,7 @@
   <div id="loading">Loading…</div>
 
   <div id="signin-view" hidden>
+    <img src="splash.png" alt="Dio Event Signup" class="splash">
     <h2 id="event-name-welcome">Welcome</h2>
     <p id="event-intro">Sign in with your Dio Google account to register for sessions.</p>
     <button id="google-signin">
