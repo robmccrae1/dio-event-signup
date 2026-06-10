@@ -216,6 +216,61 @@
     outline-offset: -3px;
   }
 
+  /* who's-going */
+  .attendees {
+    margin-top: 6px;
+    font-size: 12px;
+  }
+  .attendees-toggle {
+    background: none;
+    border: none;
+    padding: 2px 0;
+    margin: 0;
+    font: inherit;
+    font-size: 12px;
+    color: var(--navy);
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .attendees-toggle:hover { text-decoration: underline; }
+  .attendees-toggle:disabled {
+    color: var(--muted);
+    cursor: default;
+    text-decoration: none;
+  }
+  .attendees-toggle:focus-visible {
+    outline: 2px solid var(--navy);
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+  .attendees-empty {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--muted);
+    font-style: italic;
+  }
+  .attendees-toggle .chev { transition: transform 0.15s; font-size: 10px; }
+  .attendees-toggle[aria-expanded="true"] .chev { transform: rotate(90deg); }
+  .attendees-names {
+    margin: 6px 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 6px;
+  }
+  .attendees-names li {
+    background: #eef1f6;
+    color: var(--text);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+
   #toast {
     position: fixed;
     bottom: 24px;
@@ -317,6 +372,8 @@
   let sessionsList = [];          // [{id, title, presenter, session_date, start_time, end_time, room, capacity, taken, available, ...}]
   let myPicks = [];               // [{session_id, title, session_date, start_time, end_time, ...}]
   let settings = {};              // map of key -> value
+  let attendeesBySession = {};    // session_id -> [user_name, ...]
+  let expandedAttendees = new Set(); // session_ids whose name list is open
   let pollHandle = null;
   let pendingClicks = new Set();
 
@@ -400,13 +457,19 @@
   }
 
   async function loadSessionsAndSeats() {
-    const [{ data: ss, error: se }, { data: seats, error: ke }] = await Promise.all([
+    const [{ data: ss, error: se }, { data: seats, error: ke }, { data: attendees, error: ae }] = await Promise.all([
       SB.from('sessions').select('*').order('session_date').order('start_time').order('display_order'),
       SB.rpc('get_session_seats'),
+      SB.rpc('get_session_attendees'),
     ]);
     if (se || ke) { console.error(se, ke); throw new Error('Could not load sessions.'); }
+    // Attendees are a nice-to-have — if that RPC errors (e.g. not deployed
+    // yet), log it but don't block the grid from rendering.
+    if (ae) console.error('attendees load failed', ae);
     const seatBy = {};
     for (const r of (seats || [])) seatBy[r.session_id] = r;
+    attendeesBySession = {};
+    for (const r of (attendees || [])) (attendeesBySession[r.session_id] ||= []).push(r.user_name);
     sessionsList = (ss || []).map(s => ({
       ...s,
       taken:     seatBy[s.id]?.taken ?? 0,
@@ -476,6 +539,33 @@
   }
 
   // ---- rendering ----
+  // "Who's going" chip + (optionally expanded) name list for one session.
+  function attendeesHtml(sessionId) {
+    const names = attendeesBySession[sessionId] || [];
+    const n = names.length;
+    // Empty state sits OUTSIDE .attendees on purpose: a click on it falls
+    // through to the card and registers the user (one click to be first in).
+    if (n === 0) {
+      return `<div class="attendees-empty">No-one yet — be the first</div>`;
+    }
+    const open = expandedAttendees.has(sessionId);
+    const listId = `attendees-${sessionId}`;
+    const list = open
+      ? `<ul class="attendees-names" id="${listId}">${names.map(nm => `<li>${escapeHtml(nm)}</li>`).join('')}</ul>`
+      : '';
+    return `
+      <div class="attendees">
+        <button class="attendees-toggle" type="button"
+                data-attendees-toggle="${sessionId}"
+                aria-expanded="${open}"
+                aria-controls="${listId}"
+                aria-label="${open ? 'Hide' : 'Show'} who's going — ${n} ${n === 1 ? 'person' : 'people'}">
+          <span class="chev" aria-hidden="true">▶</span> 👥 ${n} going
+        </button>
+        ${list}
+      </div>`;
+  }
+
   function render() {
     const closed = isClosed();
     const closedEl = $('#closed-view');
@@ -553,6 +643,7 @@
             ${isMine ? '<div class="cancel-hint">Click to cancel</div>' : ''}
             ${reason ? `<div class="session-disabled-reason">${escapeHtml(reason)}</div>` : ''}
             <div class="session-seats">${seatLabel}</div>
+            ${attendeesHtml(s.id)}
           </div>
         `;
       }).join('');
@@ -565,7 +656,14 @@
       `;
     }).join('');
 
+    // Rebuilding innerHTML drops focus. If a "who's going" toggle was focused
+    // (likely during a 10s poll re-render), restore it afterwards so keyboard
+    // and screen-reader users aren't bumped mid-interaction.
+    const focusedToggleId = document.activeElement?.dataset?.attendeesToggle;
     $('#grid').innerHTML = gridHtml;
+    if (focusedToggleId) {
+      $(`.attendees-toggle[data-attendees-toggle="${focusedToggleId}"]`)?.focus();
+    }
 
     // my-picks panel
     const orderedPicks = [...myPicks].sort((a, b) =>
@@ -617,6 +715,9 @@
   // ---- click + keyboard ----
   $('#grid').addEventListener('keydown', (e) => {
     if (e.key !== 'Enter' && e.key !== ' ') return;
+    // The "who's going" button handles its own Enter/Space natively — don't
+    // let it bubble up and trigger a register/cancel on the card.
+    if (e.target.closest('.attendees-toggle')) return;
     const card = e.target.closest('.session');
     if (!card) return;
     e.preventDefault();
@@ -624,6 +725,21 @@
   });
 
   $('#grid').addEventListener('click', async (e) => {
+    // Any click inside the "who's going" area is handled here and never
+    // registers/cancels. Placed before the disabled gate so attendees are
+    // viewable even on a full session.
+    const attendeesArea = e.target.closest('.attendees');
+    if (attendeesArea) {
+      const toggle = e.target.closest('.attendees-toggle');
+      const sid = toggle?.dataset.attendeesToggle;
+      if (sid) {
+        if (expandedAttendees.has(sid)) expandedAttendees.delete(sid);
+        else expandedAttendees.add(sid);
+        render();
+      }
+      return;
+    }
+
     const card = e.target.closest('.session');
     if (!card) return;
     if (card.dataset.disabled === 'true') return;

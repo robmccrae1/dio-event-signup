@@ -230,6 +230,25 @@ The admin UI validates: title required, date required, start+end times required,
 
 ---
 
+## "Who's going" visibility — read before reusing for sensitive signups
+
+The signup grid shows every signed-in staff member the names of everyone
+registered for each session ("👥 N going" → click to expand). Names only —
+no emails. This is intentional for **open PD** (social proof, "who else is
+going").
+
+It is **the wrong default for anything sensitive** — wellbeing sessions, a
+restructure consultation, union-adjacent meetings, anything manager-relevant.
+Showing the attendee list to all staff *before* they book creates a chilling
+effect: people self-censor because colleagues or their HoD can see who's in.
+
+If you ever reuse this tool for that kind of event, restrict visibility to
+people already booked into the session. In `get_session_attendees()`
+(`supabase/schema.sql` § 8b), add a guard so the function only returns rows
+when the caller is registered for that session — or have a developer do it.
+
+---
+
 ## Things to NOT do
 
 - **Don't truncate `auth.users`** — signs everyone out and orphans registrations.
