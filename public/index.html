@@ -94,8 +94,40 @@
     z-index: 10;
     box-shadow: 0 2px 6px rgba(0,0,0,0.04);
   }
-  #my-picks .picks-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  #my-picks .picks-header {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  #my-picks .picks-header-left { display: flex; align-items: center; gap: 8px; }
+  #my-picks .picks-header .chev {
+    font-size: 11px;
+    color: var(--muted);
+    transition: transform 0.15s;
+    transform: rotate(90deg); /* expanded: points down */
+  }
+  #my-picks.collapsed .picks-header .chev { transform: rotate(0); } /* collapsed: points right */
+  #my-picks .picks-header:focus-visible {
+    outline: 2px solid var(--navy);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+  /* No collapse affordance when there's nothing to collapse */
+  #my-picks.no-picks .picks-header { cursor: default; }
+  #my-picks.no-picks .picks-header .chev { visibility: hidden; }
   #my-picks h2 { margin: 0; font-size: 16px; font-weight: 600; }
+  #my-picks.collapsed #picks-body { display: none; }
+  #picks-list {
+    max-height: min(232px, 45vh);
+    overflow-y: auto;
+  }
   #my-picks .count-badge {
     background: var(--blue-bg);
     color: var(--navy);
@@ -337,12 +369,18 @@
       No sessions have been set up yet. Check back soon.
     </div>
     <div id="my-picks" hidden>
-      <div class="picks-header">
-        <h2>Your picks</h2>
+      <button class="picks-header" id="picks-toggle" type="button"
+              aria-expanded="true" aria-controls="picks-body">
+        <span class="picks-header-left">
+          <span class="chev" aria-hidden="true">▶</span>
+          <h2>Your picks</h2>
+        </span>
         <span class="count-badge" id="picks-count">0</span>
+      </button>
+      <div id="picks-body">
+        <div id="picks-status"></div>
+        <ul id="picks-list"></ul>
       </div>
-      <div id="picks-status"></div>
-      <ul id="picks-list"></ul>
       <div id="picks-actions" hidden>
         <button id="print-picks" type="button">🖨 Print my picks</button>
         <button id="save-calendar" type="button">📅 Add to calendar</button>
@@ -376,6 +414,18 @@
   let expandedAttendees = new Set(); // session_ids whose name list is open
   let pollHandle = null;
   let pendingClicks = new Set();
+
+  // "Your picks" collapse. null = follow the auto rule (collapse once the
+  // list gets long enough to push the grid off-screen); true/false = the
+  // user has chosen, so respect them.
+  const PICKS_COLLAPSE_THRESHOLD = 4;
+  let picksCollapsed = null;
+  function picksAreCollapsed() {
+    if (myPicks.length === 0) return false;
+    return picksCollapsed === null
+      ? myPicks.length > PICKS_COLLAPSE_THRESHOLD
+      : picksCollapsed;
+  }
 
   function toast(msg, kind = 'info') {
     toastEl.textContent = msg;
@@ -704,6 +754,19 @@
     }
 
     $('#picks-actions').hidden = (myPicks.length === 0);
+
+    // Collapse state (A+B): cap-and-scroll handled in CSS; here we toggle the
+    // collapsed class + a11y state and a count-aware label on the toggle.
+    const panel = $('#my-picks');
+    const collapsed = picksAreCollapsed();
+    panel.classList.toggle('collapsed', collapsed);
+    panel.classList.toggle('no-picks', myPicks.length === 0);
+    const toggle = $('#picks-toggle');
+    toggle.setAttribute('aria-expanded', String(!collapsed));
+    toggle.setAttribute('aria-label',
+      myPicks.length === 0
+        ? 'Your picks'
+        : `Your picks — ${myPicks.length} booked, ${collapsed ? 'show' : 'hide'} list`);
   }
 
   function formatCutoff() {
@@ -888,6 +951,12 @@
 
   $('#print-picks').addEventListener('click', printMyPicks);
   $('#save-calendar').addEventListener('click', downloadIcs);
+
+  $('#picks-toggle').addEventListener('click', () => {
+    if (myPicks.length === 0) return; // nothing to collapse
+    picksCollapsed = !picksAreCollapsed();
+    render();
+  });
 
   // ---- polling ----
   function startPolling() {
