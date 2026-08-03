@@ -40,3 +40,29 @@ jobs:
             echo "::error::Supabase RPC ping returned HTTP $rpc"
             exit 1
           fi
+
+  # GitHub auto-disables scheduled workflows after 60 days of no repo activity.
+  # Scheduled runs don't count as activity — only pushes do. This job pushes an
+  # empty commit, but only once the repo has gone quiet for 50+ days, so we reset
+  # the clock without spamming a commit every day.
+  keepalive:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Push empty commit if repo is going stale
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          last=$(git log -1 --format=%ct)
+          now=$(date +%s)
+          age_days=$(( (now - last) / 86400 ))
+          echo "Last commit was $age_days days ago."
+          if [ "$age_days" -ge 50 ]; then
+            git commit --allow-empty -m "chore: keepalive (reset Actions inactivity clock)"
+            git push
+            echo "Pushed keepalive commit."
+          else
+            echo "Repo still fresh; no keepalive commit needed."
+          fi
