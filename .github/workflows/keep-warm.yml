@@ -11,6 +11,7 @@ on:
 jobs:
   ping:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Ping Supabase Auth health
         env:
@@ -47,6 +48,7 @@ jobs:
   # the clock without spamming a commit every day.
   keepalive:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: write
     steps:
